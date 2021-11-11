@@ -1,0 +1,1384 @@
+---
+title: "acne_analysis"
+author: "Inoli Wadumesthrige Don"
+date: "7/6/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, library_read}
+#All packages used for analysis in the study
+
+#install.packages("tidyverse")
+library(tidyverse)
+
+#install.packages("ggvenn")
+library(ggvenn)
+
+#install.packages("UpSetR")
+library(UpSetR)
+
+#install.packages("devtools")
+library(devtools)
+
+#install_github("jokergoo/ComplexHeatmap")
+library(ComplexHeatmap)
+
+library(cluster)
+
+#install.packages("ggdendro")
+library(ggdendro)
+
+library(grid)
+
+```
+
+
+```{r, library_read}
+#Acne specific significant eQTL files were loaded separately
+
+#ACNE
+acne_exposed <- read_tsv("../results/inoli/sun_exposed/acne/significant_eqtls.txt")
+acne_unexposed <- read_tsv("../results/inoli/not_sun_exposed/acne/significant_eqtls.txt")
+
+
+#Comorbid diseases were loaded separately
+#COMORBID DISEASES SUN EXPOSED
+
+alopecia_exposed <- read_tsv("../results/inoli/sun_exposed/alopecia/significant_eqtls.txt")
+
+behcets_syndrome_exposed <- read_tsv("../results/inoli/sun_exposed/behcets_syndrome/significant_eqtls.txt")
+
+endometriosis_exposed <- read_tsv("../results/inoli/sun_exposed/endometriosis/significant_eqtls.txt")
+
+hirsutism_exposed <- read_tsv("../results/inoli/sun_exposed/hirsutism/significant_eqtls.txt")
+
+non_alcoholic_fatty_liver_disease_exposed <- read_tsv("../results/inoli/sun_exposed/non_alcoholic_fatty_liver_disease/significant_eqtls.txt")
+
+osteitis_deformans_exposed <- read_tsv("../results/inoli/sun_exposed/osteitis_deformans/significant_eqtls.txt")
+
+polycystic_ovary_syndrome_exposed <- read_tsv("../results/inoli/sun_exposed/polycystic_ovary_syndrome/significant_eqtls.txt")
+
+psoriasis_exposed <- read_tsv("../results/inoli/sun_exposed/psoriasis/significant_eqtls.txt")
+
+pyoderma_gangrenosum_exposed <- read_tsv("../results/inoli/sun_exposed/pyoderma_gangrenosum/significant_eqtls.txt")
+
+rheumatoid_arthritis_exposed <-
+  read_tsv("../results/inoli/sun_exposed/rheumatoid_arthritis/significant_eqtls.txt")
+
+rosecea_exposed <- read_tsv("../results/inoli/sun_exposed/rosecea/significant_eqtls.txt")
+
+vitiligo_exposed <- read_tsv("../results/inoli/sun_exposed/vitiligo/significant_eqtls.txt")
+
+
+
+
+#COMORBID DISEASES UNEXPOSED
+
+
+alopecia_unexposed <- read_tsv("../results/inoli/not_sun_exposed/alopecia/significant_eqtls.txt")
+
+behcets_syndrome_unexposed <- read_tsv("../results/inoli/not_sun_exposed/behcets_syndrome/significant_eqtls.txt")
+
+endometriosis_unexposed <- read_tsv("../results/inoli/not_sun_exposed/endometriosis/significant_eqtls.txt")
+
+hirsutism_unexposed <- read_tsv("../results/inoli/not_sun_exposed/hirsutism/significant_eqtls.txt")
+
+non_alcoholic_fatty_liver_disease_unexposed <- read_tsv("../results/inoli/not_sun_exposed/non_alcoholic_fatty_liver_disease/significant_eqtls.txt")
+
+osteitis_deformans_unexposed <- read_tsv("../results/inoli/not_sun_exposed/osteitis_deformans/significant_eqtls.txt")
+
+polycystic_ovary_syndrome_unexposed <- read_tsv("../results/inoli/not_sun_exposed/polycystic_ovary_syndrome/significant_eqtls.txt")
+
+psoriasis_unexposed <- read_tsv("../results/inoli/not_sun_exposed/psoriasis/significant_eqtls.txt")
+
+pyoderma_gangrenosum_unexposed <- read_tsv("../results/inoli/not_sun_exposed/pyoderma_gangrenosum/significant_eqtls.txt")
+
+rheumatoid_arthritis_unexposed <-
+  read_tsv("../results/inoli/not_sun_exposed/rheumatoid_arthritis/significant_eqtls.txt")
+
+rosecea_unexposed <- read_tsv("../results/inoli/not_sun_exposed/rosecea/significant_eqtls.txt")
+
+vitiligo_unexposed <- read_tsv("../results/inoli/not_sun_exposed/vitiligo/significant_eqtls.txt")
+
+
+
+
+
+```
+
+```{r}
+acne_exposed %>% 
+  select(gencode_id) %>% 
+write_tsv("../results/acneall.txt")
+
+acne_exposed %>% 
+  distinct(gene)%>% 
+  write_tsv("../results/acnesun.txt")
+
+acne_unexposed %>% 
+  distinct(gene)%>% 
+  write_tsv("../results/acnenosun.txt")
+  
+```
+
+
+
+```{r}
+acne_exposed %>% 
+  select(snp) %>% 
+  n_distinct()
+
+acne_exposed
+
+acne_exposed %>% 
+  select(interaction_type) %>% 
+  distinct() %>% 
+  
+  
+acne_exposed %>% 
+  select(interaction_type) %>% 
+  n_distinct("Trans-intrachromosomal")
+
+
+
+  
+  
+```
+
+
+```{r}
+#SUMMARY TABLE - eqtls
+summary_eqtls <- data %>% 
+  select(disease, snp, gene, interaction_type, tissue) %>% 
+ distinct(snp, disease, tissue) %>% 
+  count(disease, tissue, name = "eQTLs")
+
+```
+
+```{r}
+#SUMMARY TABLE - egenes
+summary_egenes <- data %>% 
+  select(disease, snp, gene, interaction_type, tissue) %>% 
+ distinct(gene, disease, tissue) %>% 
+  count(disease, tissue, name = "eGenes")
+```
+
+```{r}
+#SUMMARY TABLE - interactions
+
+summary_interaction <- data %>% 
+  select(disease, snp, gene, interaction_type, tissue) %>% 
+  count(disease, tissue, interaction_type, name = "interaction_count") %>% 
+  pivot_wider(names_from = "interaction_type", values_from = "interaction_count")
+```
+
+```{r}
+acne_all %>% 
+ separate(col = gencode_id, into = c("gencodeid", NA)) %>% 
+  distinct(gencodeid) %>% 
+  write_tsv("../text/acne_all_string_input.tsv")
+
+acne_exposed %>% 
+ separate(col = gencode_id, into = c("gencodeid", NA)) %>% 
+  distinct(gencodeid) %>% 
+  write_tsv("../text/acne_sun_string_input.tsv")
+
+acne_unexposed %>% 
+ separate(col = gencode_id, into = c("gencodeid", NA)) %>% 
+  distinct(gencodeid) %>% 
+   write_tsv("../text/acne_nosun_string_input.tsv")
+
+
+```
+
+
+
+```{r}
+acne_exposed %>% 
+  bind_rows(acne_unexposed) %>% 
+  group_by(tissue) %>% 
+  summarise(n_snps = n_distinct(snp),n_genes = n_distinct(gene)) %>% 
+  ungroup()
+
+#unneccesay stuff for no
+acne_exposed %>% 
+  bind_rows(acne_unexposed) %>% 
+  group_by(gene) %>% 
+  summarise(n_snps = n_distinct(snp),n_genes = n_distinct(gene), tissue = tissue) %>% 
+  ungroup()
+
+```
+
+```{r, Gene_snp}
+acne_all <- acne_exposed %>% 
+  bind_rows(acne_unexposed)
+
+#unique genes with the number of SNPs interacting
+acne_all %>% 
+  count(gene)
+
+#one gene interacting with many SNPs; Gene-SNP
+
+acne_all %>% 
+  distinct(snp, gene, tissue) %>% 
+  count(gene, tissue) %>%
+```
+
+
+```{r}
+
+#FLAG
+acne_all %>% 
+  distinct(snp, gene, tissue) %>% 
+  count(snp, tissue)
+```
+
+```{r}
+acne_all %>% 
+  distinct(snp, gene, tissue) %>% 
+  count(snp, tissue) %>% 
+  ggplot(aes(x = fct_reorder(snp,n), y = n, fill = tissue))+
+  geom_col(position = position_dodge())+
+  coord_flip()+
+  scale_fill_manual(values=c("orange", "royalblue1"), labels=c("Sun Exposed", "Unexposed"))+
+  labs(title = "eQTLs of acne that associate with eGenes",
+    x = "eQTLs that associate with eGenes", 
+    y = "Number of eGenes",
+    fill = "Tissue")+
+  theme_classic()
+ 
+
+
+
+    
+```
+
+```{r, TO_SORT_LATER}
+#to sort out at a later date
+data %>% 
+  distinct(snp, gene, tissue) %>% 
+  count(snp, tissue) %>% 
+  ggplot(aes(x = fct_reorder(snp,n), y = n, fill = tissue))+
+  geom_col(position = position_dodge())+
+  coord_flip()
+```
+
+
+```{r, Gene_snp}
+#one gene affected by multiple SNPs - not that important because SNPs could be in clusters, therefore location is important.
+mutate(Gene_SNP = case_when(
+    n == 1 ~ 1, 
+    n == 2 ~ 2
+  )) %>% 
+  count(tissue, Gene_SNP) %>% 
+  ggplot(aes(x = Gene_SNP,y = n, fill = tissue))+
+  geom_col(position = position_dodge())
+
+
+
+```
+
+
+```{r, SNP_gene}
+#unique SNPs with the number of genes interacting
+acne_all %>% 
+  count(snp)
+
+
+acne_all %>% 
+  distinct(snp, gene, tissue) %>% 
+  count(snp, tissue) %>% 
+  mutate(SNP_gene = case_when(
+    n == 1 ~ 1, 
+    n == 2 ~ 2,
+    n == 3 ~ 3,
+    n == 4 ~ 4
+  )) %>% 
+  count(tissue, SNP_gene) %>% 
+  ggplot(aes(x = SNP_gene,y = n, fill = tissue))+
+  geom_col(position = position_dodge())
+
+
+```
+
+
+
+
+
+
+```{r, interactions}
+acne_all %>% 
+  distinct(interaction_type) 
+
+#CIS
+acne_all %>% 
+  filter(interaction_type=="Cis",) %>% 
+  n_distinct()
+
+acne_exposed %>% 
+  filter(interaction_type=="Cis",) %>% 
+  n_distinct()
+
+acne_unexposed %>% 
+  filter(interaction_type=="Cis",) %>% 
+  n_distinct()
+
+#trans-intrachromosomal
+
+acne_all %>% 
+  filter(interaction_type=="Trans-intrachromosomal",) %>% 
+  n_distinct()
+
+acne_exposed %>% 
+  filter(interaction_type=="Trans-intrachromosomal",) %>% 
+  n_distinct()
+
+acne_unexposed %>% 
+  filter(interaction_type=="Trans-intrachromosomal",) %>% 
+  n_distinct()
+
+
+```
+
+```{r}
+#FLAG
+#RERUN!!!!
+#getting the interaction types and numbers for each comorbid disease
+
+data %>% 
+  select(interaction_type, disease) %>% 
+  mutate(
+    disease == "disease", 
+    interaction_type == "interaction",
+    n_distinct(interaction_type) == "numbers of interaction"
+  )
+  
+  
+
+```
+
+
+
+```{r, intergenic}
+acne_all %>% 
+  filter(distance == "0") 
+
+acne_exposed %>% 
+  filter(distance == "0") 
+
+
+acne_unexposed %>% 
+  filter(distance == "0")
+
+```
+
+
+
+```{r, plots}
+#main body of Venn diagram
+total.acne.snps <- acne_exposed %>% 
+  bind_rows(acne_unexposed) %>% distinct(snp)
+  
+
+#Venn diagram 1 - SNPs
+sample.sun.exposed <- acne_exposed %>%
+  select(snp) %>% 
+  n_distinct()
+  
+sample.sun.unexposed <- acne_unexposed %>%
+  select(snp) %>% 
+  n_distinct()
+
+
+
+d1 <- list(
+  Sun.exposed = unique(acne_exposed$snp ),
+  Unexposed = unique(acne_unexposed$snp ))
+
+ggvenn(d1, c("Sun.exposed", "Unexposed"),
+       fill_color = c("orange", "royalblue1"),
+fill_alpha = 0.5,
+stroke_color = "black",
+stroke_alpha = 1,
+stroke_size = 1,
+stroke_linetype = "solid",
+set_name_color = "black",
+set_name_size = 6,
+text_color = "black",
+text_size = 4)
+
+
+   
+
+#Venn diagram 2 - Genes
+
+d2 <- list(
+  Sun.exposed = unique(acne_exposed$gene ),
+  Unexposed = unique(acne_unexposed$gene ))
+
+ggvenn(d2, c("Sun.exposed", "Unexposed"),
+       fill_color = c("orange", "royalblue1"),
+fill_alpha = 0.5,
+stroke_color = "black",
+stroke_alpha = 1,
+stroke_size = 1,
+stroke_linetype = "solid",
+set_name_color = "black",
+set_name_size = 6,
+text_color = "black",
+text_size = 4)
+
+ 
+
+
+#HELP 
+
+acne_exposed %>% 
+  bind_rows(acne_unexposed) %>% 
+  select(snp) %>% 
+  n_distinct()
+
+unique(acne_exposed$snp )
+
+```
+
+
+```{r, commonsnps_commongenes}
+
+acne_exposed %>% select(snp) %>% intersect(acne_unexposed %>% select(snp))
+
+acne_exposed %>% select(gene) %>% intersect(acne_unexposed %>% select(gene))
+```
+
+```{r}
+#overlapping SNP for acne and alopecia
+
+alopecia_all <- alopecia_exposed %>% 
+  bind_rows(alopecia_unexposed)
+
+acne_all %>% 
+  select(snp) %>% 
+  intersect(alopecia_all %>% select(snp))
+```
+
+
+
+```{r}
+acne_exposed %>% 
+  select(snp) %>% 
+  n_distinct()
+
+
+acne_exposed %>% 
+  select(gene) %>% 
+  n_distinct()
+
+
+acne_exposed %>% 
+  filter(interaction_type=="Cis",) %>% 
+  n_distinct()
+
+
+acne_exposed %>% 
+  distinct(interaction_type) 
+
+```
+
+
+
+```{r, comorbid_stats}
+
+#COMBIND EXPOSED
+
+acne_exposed %>% 
+  bind_rows(alopecia_exposed)%>% bind_rows(behcets_syndrome_exposed) %>% 
+  group_by(tissue) %>% 
+  summarise(n_snps = n_distinct(snp),n_genes = n_distinct(gene)) %>% 
+  ungroup()
+
+```
+
+
+```{r}
+acne_all%>% 
+  select(gencode_id)
+
+acne_exposed%>% 
+  select(gencode_id)
+
+
+acne_unexposed%>% 
+  select(gencode_id)
+
+```
+
+```{r}
+get_files <- function(dx, results_dir) {
+  #Extract paths to significant eqtls
+  paste0(results_dir, "/", dx, "/significant_eqtls.txt")
+}
+```
+
+
+```{r}
+read_eqtls <- function(file_names) {
+  #Returns dataframe of eQTLs
+  data_frame(filename = file_names) %>% 
+    mutate(file_contents = map(filename,  ~ read_tsv(file = .) %>% 
+                                 mutate(across(where(is.logical), as.character)))) %>% 
+    unnest()
+}
+```
+
+
+```{r}
+data <- read_eqtls(sapply(list.files("../results/inoli/not_sun_exposed"), # Change this and subsequent ones.
+                          get_files, 
+                          results_dir="../results/inoli/not_sun_exposed")) %>% 
+  bind_rows(
+    read_eqtls(sapply(list.files("../results/inoli/sun_exposed"), 
+                      get_files, 
+                      results_dir="../results/inoli/sun_exposed"))
+  ) %>%
+  mutate(disease = basename(dirname(filename)))
+```
+
+
+```{r}
+data %>% 
+   group_by(disease, tissue) %>% 
+   summarise(n_snps = n_distinct(snp),
+             n_genes = n_distinct(gene))
+```
+
+
+```{r}
+#seperate used specifically for columns with data separted by anything like dots or dashes or commas etc to remove 
+
+data %>% 
+ separate(gencode_id, c("geneid_input",NA)) %>% 
+  distinct(geneid_input) %>% 
+  write_tsv("../text/geneid_input.txt")
+  
+```
+
+
+```{r}
+alopecia_all <- data %>% 
+  subset(data, disease == "alopecia") 
+  
+```
+
+
+
+```{r}
+plus_acne_sun <- read_tsv("../results/inoli/acne_no_sun_ppin.txt")
+
+```
+
+
+```{r}
+plus_acne_sun %>% 
+  select(gene_0) %>%
+  
+  
+```
+
+
+```{r}
+multi_morb <- read_tsv("../results/inoli/multimorbidities.txt")
+```
+
+
+
+```{r, corrected_p_values}
+ multi_morb %>% 
+  filter(disease != "acne") %>% 
+  group_by(tissue)%>% 
+  mutate(adj_p_value = p.adjust(p=pval, method = "bonferroni")) %>% 
+  filter(adj_p_value <= 0.05) %>% 
+  write_tsv("../text/p_adj_multi_morb.txt")
+  
+
+```
+
+
+
+```{r}
+#snpUPSETR 
+getwd()
+
+snp_comorbid <- readxl::read_excel("../data/snp_comorbid.xlsx")
+
+snp_list<- list(
+acne= na.omit(snp_comorbid$Acne),
+alopecia= na.omit(snp_comorbid$Alopecia),
+behcets_syndrome = na.omit(snp_comorbid$`Behcets Syndrome`),
+endometriosis= na.omit(snp_comorbid$Endometriosis),
+hirsutism= na.omit(snp_comorbid$Hirsutism),
+nafld= na.omit(snp_comorbid$NAFLD),
+od= na.omit(snp_comorbid$`Osteitis Deformans`),
+pos= na.omit(snp_comorbid$`Polycyctic ovary syndrome`),
+psoriasis= na.omit(snp_comorbid$Psoriasis),
+pg= na.omit(snp_comorbid$`Pyoderma Gangrenosum`),
+ra= na.omit(snp_comorbid$`Rheumatoid Arthritis`),
+rosecea= na.omit(snp_comorbid$Rosecea),
+vitiligo= na.omit(snp_comorbid$Vitiligo)
+)
+
+names(snp_list)<- c("acne", "alopecia", "behcets_syndrome", "endometriosis",
+"hirsutism", "nafld", "od","pos", "psoriasis","pg", "ra", "rosecea", "vitiligo")
+
+snp_matrix <- list_to_matrix(snp_list)
+
+snp_df <- data.frame(snp_matrix) %>% 
+  mutate(snps = rownames(snp_matrix))
+
+upset(snp_df, sets = rev(names(snp_list)), keep.order = TRUE,order.by ="freq", x = 0.65, y=0.95, gp=gpar(fontsize=10))
+
+
+
+```
+
+
+```{r, fig.height=6, fig.width=8}
+#snpUPSETR 
+
+
+snp_comorbid <- readxl::read_excel("../data/snp_comorbid.xlsx")
+
+snp_list<- list(
+acne= na.omit(snp_comorbid$Acne),
+alopecia= na.omit(snp_comorbid$Alopecia),
+behcets_syndrome = na.omit(snp_comorbid$`Behcets Syndrome`),
+endometriosis= na.omit(snp_comorbid$Endometriosis),
+hirsutism= na.omit(snp_comorbid$Hirsutism),
+nafld= na.omit(snp_comorbid$NAFLD),
+od= na.omit(snp_comorbid$`Osteitis Deformans`),
+pos= na.omit(snp_comorbid$`Polycyctic ovary syndrome`),
+psoriasis= na.omit(snp_comorbid$Psoriasis),
+pg= na.omit(snp_comorbid$`Pyoderma Gangrenosum`),
+ra= na.omit(snp_comorbid$`Rheumatoid Arthritis`),
+rosecea= na.omit(snp_comorbid$Rosecea),
+vitiligo= na.omit(snp_comorbid$Vitiligo)
+)
+
+names(snp_list)<- c("acne", "alopecia", "behcets_syndrome", "endometriosis",
+"hirsutism", "nafld", "od","pos", "psoriasis","pg", "ra", "rosecea", "vitiligo")
+
+snp_matrix <- list_to_matrix(snp_list)
+
+snp_df <- data.frame(snp_matrix) %>% 
+  mutate(snps = rownames(snp_matrix))
+
+upset(snp_df, sets = rev(names(snp_list)), keep.order = TRUE,order.by ="freq", text.scale = 1.3)
+
+```
+
+
+
+```{r}
+get_eqtls <- function(tiss, dx, df){
+  res <- df %>% 
+    dplyr::filter(tissue== tiss & disease == dx ) %>% 
+      distinct(snp)
+  print(res$snp)
+}
+```
+
+
+```{r, fig.height=6, fig.width=8}
+#eqtlUPSET
+#Sunexposed tissue
+ 
+exposed_eqtl_list<- list(
+acne= get_eqtls("Skin_Sun_Exposed_Lower_leg", "acne", data),
+alopecia= get_eqtls("Skin_Sun_Exposed_Lower_leg", "alopecia", data),
+bs= get_eqtls("Skin_Sun_Exposed_Lower_leg", "behcets_syndrome", data),
+endometriosis= get_eqtls("Skin_Sun_Exposed_Lower_leg", "endometriosis", data),
+hirsutism= get_eqtls("Skin_Sun_Exposed_Lower_leg", "hirsutism", data),
+nafld= get_eqtls("Skin_Sun_Exposed_Lower_leg", "non_alcoholic_fatty_liver_disease", data),
+od= get_eqtls("Skin_Sun_Exposed_Lower_leg", "osteitis_deformans", data),
+pos= get_eqtls("Skin_Sun_Exposed_Lower_leg", "polycystic_ovary_syndrome", data),
+psoriasis= get_eqtls("Skin_Sun_Exposed_Lower_leg", "psoriasis", data),
+pg= get_eqtls("Skin_Sun_Exposed_Lower_leg", "pyoderma_gangrenosum", data),
+ra= get_eqtls("Skin_Sun_Exposed_Lower_leg", "rheumatoid_arthritis", data),
+rosecea= get_eqtls("Skin_Sun_Exposed_Lower_leg", "rosecea", data),
+vitiligo= get_eqtls("Skin_Sun_Exposed_Lower_leg", "vitiligo", data)
+)
+
+#upset(fromList(exposed_eqtl_list),nsets=13, order.by = "freq", grid.text("eQTLs of Sun Exposed tissue for acne and comorbid diseases",x = 0.65, y=0.95, gp=gpar(fontsize=10)))
+
+names(exposed_eqtl_list)<- c("acne", "alopecia", "behcets_syndrome", "endometriosis",
+"hirsutism", "nafld", "od","pos", "psoriasis","pg", "ra", "rosecea", "vitiligo")
+
+exposed_eqtl_matrix <- list_to_matrix(exposed_eqtl_list)
+
+exposed_eqtl_df <- data.frame(exposed_eqtl_matrix) %>% 
+  mutate(snps = rownames(exposed_eqtl_matrix))
+
+upset(exposed_eqtl_df, sets = rev(names(exposed_eqtl_list)), keep.order = TRUE, order.by = "freq", text.scale = 1.3)
+```
+
+
+```{r, fig.height=6, fig.width=8}
+#Unexposed tissue
+
+
+unexposed_eqtl_list<- list(
+acne= get_eqtls("Skin_Not_Sun_Exposed_Suprapubic", "acne", data),
+alopecia= get_eqtls("Skin_Not_Sun_Exposed_Suprapubic", "alopecia", data),
+bs= get_eqtls("Skin_Not_Sun_Exposed_Suprapubic", "behcets_syndrome", data),
+endometriosis= get_eqtls("Skin_Not_Sun_Exposed_Suprapubic", "endometriosis", data),
+hirsutism= get_eqtls("Skin_Not_Sun_Exposed_Suprapubic", "hirsutism", data),
+nafld= get_eqtls("Skin_Not_Sun_Exposed_Suprapubic", "non_alcoholic_fatty_liver_disease", data),
+od= get_eqtls("Skin_Not_Sun_Exposed_Suprapubic", "osteitis_deformans", data),
+pos= get_eqtls("Skin_Not_Sun_Exposed_Suprapubic", "polycystic_ovary_syndrome", data),
+psoriasis= get_eqtls("Skin_Not_Sun_Exposed_Suprapubic", "psoriasis", data),
+pg= get_eqtls("Skin_Not_Sun_Exposed_Suprapubic", "pyoderma_gangrenosum", data),
+ra= get_eqtls("Skin_Not_Sun_Exposed_Suprapubic", "rheumatoid_arthritis", data),
+rosecea= get_eqtls("Skin_Not_Sun_Exposed_Suprapubic", "rosecea", data),
+vitiligo= get_eqtls("Skin_Not_Sun_Exposed_Suprapubic", "vitiligo", data)
+)
+
+#upset(fromList(unexposed_eqtl_list),nsets=13, order.by = "freq", grid.text("eQTLs of Sun Unxposed tissue for acne and comorbid diseases",x = 0.65, y=0.95, gp=gpar(fontsize=10)))
+
+names(unexposed_eqtl_list)<- c("acne", "alopecia", "behcets_syndrome", "endometriosis",
+"hirsutism", "nafld", "od","pos", "psoriasis","pg", "ra", "rosecea", "vitiligo")
+
+unexposed_eqtl_matrix <- list_to_matrix(unexposed_eqtl_list)
+
+unexposed_eqtl_df <- data.frame(unexposed_eqtl_matrix) %>% 
+  mutate(snps = rownames(unexposed_eqtl_matrix))
+
+upset(unexposed_eqtl_df, sets = rev(names(unexposed_eqtl_list)), keep.order = TRUE, order.by = "freq",text.scale = 1.3)
+
+
+```
+
+
+```{r}
+get_gene <- function(tiss, dx, df){
+  res <- df %>% 
+    filter(tissue== tiss & disease == dx ) %>% 
+      distinct(gene)
+  print(res$gene)
+}
+```
+
+```{r, fig.height=6, fig.width=8}
+#egeneUPSET
+#exposed tissue
+
+exposed_gene_list<- list(
+acne= get_gene("Skin_Sun_Exposed_Lower_leg", "acne", data),
+alopecia= get_gene("Skin_Sun_Exposed_Lower_leg", "alopecia", data),
+bs= get_gene("Skin_Sun_Exposed_Lower_leg", "behcets_syndrome", data),
+endometriosis= get_gene("Skin_Sun_Exposed_Lower_leg", "endometriosis", data),
+hirsutism= get_gene("Skin_Sun_Exposed_Lower_leg", "hirsutism", data),
+nafld= get_gene("Skin_Sun_Exposed_Lower_leg", "non_alcoholic_fatty_liver_disease", data),
+od= get_gene("Skin_Sun_Exposed_Lower_leg", "osteitis_deformans", data),
+pos= get_gene("Skin_Sun_Exposed_Lower_leg", "polycystic_ovary_syndrome", data),
+psoriasis= get_gene("Skin_Sun_Exposed_Lower_leg", "psoriasis", data),
+pg= get_gene("Skin_Sun_Exposed_Lower_leg", "pyoderma_gangrenosum", data),
+ra= get_gene("Skin_Sun_Exposed_Lower_leg", "rheumatoid_arthritis", data),
+rosecea= get_gene("Skin_Sun_Exposed_Lower_leg", "rosecea", data),
+vitiligo= get_gene("Skin_Sun_Exposed_Lower_leg", "vitiligo", data)
+)
+
+#upset(fromList(exposed_gene_list),nsets=13, order.by = "freq", grid.text("eGenes of Sun Exposed tissue for acne and comorbid diseases",x = 0.65, y=0.95, gp=gpar(fontsize=10)))
+
+names(exposed_gene_list)<- c("acne", "alopecia", "behcets_syndrome", "endometriosis",
+"hirsutism", "nafld", "od","pos", "psoriasis","pg", "ra", "rosecea", "vitiligo")
+
+exposed_gene_matrix <- list_to_matrix(exposed_gene_list)
+
+exposed_gene_df <- data.frame(exposed_gene_matrix) %>% 
+  mutate(snps = rownames(exposed_gene_matrix))
+
+upset(exposed_gene_df, sets = rev(names(exposed_gene_list)), keep.order = TRUE, order.by = "freq", text.scale = 1.3)
+```
+
+
+```{r, fig.height=6, fig.width=8}
+#unexposed tissue
+
+unexposed_gene_list<- list(
+acne= get_gene("Skin_Not_Sun_Exposed_Suprapubic", "acne", data),
+alopecia= get_gene("Skin_Not_Sun_Exposed_Suprapubic", "alopecia", data),
+bs= get_gene("Skin_Not_Sun_Exposed_Suprapubic", "behcets_syndrome", data),
+endometriosis= get_gene("Skin_Not_Sun_Exposed_Suprapubic", "endometriosis", data),
+hirsutism= get_gene("Skin_Not_Sun_Exposed_Suprapubic", "hirsutism", data),
+nafld= get_gene("Skin_Not_Sun_Exposed_Suprapubic", "non_alcoholic_fatty_liver_disease", data),
+od= get_gene("Skin_Not_Sun_Exposed_Suprapubic", "osteitis_deformans", data),
+pos= get_gene("Skin_Not_Sun_Exposed_Suprapubic", "polycystic_ovary_syndrome", data),
+psoriasis= get_gene("Skin_Not_Sun_Exposed_Suprapubic", "psoriasis", data),
+pg= get_gene("Skin_Not_Sun_Exposed_Suprapubic", "pyoderma_gangrenosum", data),
+ra= get_gene("Skin_Not_Sun_Exposed_Suprapubic", "rheumatoid_arthritis", data),
+rosecea= get_gene("Skin_Not_Sun_Exposed_Suprapubic", "rosecea", data),
+vitiligo= get_gene("Skin_Not_Sun_Exposed_Suprapubic", "vitiligo", data)
+)
+
+names(unexposed_gene_list)<- c("acne", "alopecia", "behcets_syndrome", "endometriosis",
+"hirsutism", "nafld", "od","pos", "psoriasis","pg", "ra", "rosecea", "vitiligo")
+
+unexposed_gene_matrix <- list_to_matrix(unexposed_gene_list)
+
+unexposed_gene_df <- data.frame(unexposed_gene_matrix) %>% 
+  mutate(snps = rownames(unexposed_gene_matrix))
+
+upset(unexposed_gene_df, sets = rev(names(unexposed_gene_list)), keep.order = TRUE, order.by = "freq", text.scale = 1.3)
+
+
+```
+
+```{r}
+#DIAGRAM WITH PATHWAYS AS COLUMNS - NOT USED IN RESULTS
+#data structure for creating heatmap - sunexposed data
+
+heatmap_data <- results_sun_gprof %>%
+  filter(present_count == "4" & source %in% c("KEGG", "REAC")) %>% 
+ select(source, term_name, intersections) %>% 
+  separate_rows(intersections, sep = ",") %>% 
+  mutate(yes = "yes") %>% 
+  pivot_wider(names_from = intersections, values_from = yes) %>% 
+  replace(., is.na(.), "no") %>% 
+  mutate(term_name = paste0(source,":", term_name), 
+         source = NULL) %>% 
+  pivot_longer(cols = 2:50, names_to = "gene", values_to = "yes") %>%
+  mutate(yes = as.factor(yes)) %>% 
+  pivot_wider(names_from = "term_name", values_from = "yes") 
+  
+
+```
+
+```{r}
+#heatmap data distance created via gower
+
+heatmap_dist <- daisy(heatmap_data[, 2:13], metric = c("gower"))
+
+heatmap_matrix <- as.matrix(heatmap_dist) 
+rownames(heatmap_matrix)<- heatmap_data$gene
+
+```
+
+```{r}
+plot(hclust(heatmap_dist, method = "complete"))
+```
+```{r}
+dendro <- as.dendrogram(hclust(heatmap_dist, method = "complete"))
+#dendro_plot <- 
+heat_dendro <- ggdendrogram(data = dendro, rotate = TRUE, labels = FALSE)+
+  theme(axis.text.y = element_blank())
+```
+
+
+```{r}
+rownames(heatmap_matrix)
+```
+
+
+```{r}
+
+rownames(heatmap_matrix)[order(dendro %>% labels)]
+```
+
+
+```{r}
+heat_plot <- heatmap_data %>% 
+  pivot_longer(cols = 2:13, names_to = "term_name", values_to = "yes") %>% 
+  ggplot(aes(x = term_name,
+             y = factor(gene, levels = rownames(heatmap_matrix)[order(dendro %>% labels)]),
+             fill = yes))+
+      geom_tile()+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), 
+        legend.position = "bottom")
+```
+
+
+```{r, fig.height=10, fig.width=8}
+grid.newpage()
+print(heat_plot, vp = viewport(x = 0.4, y = 0.5, width = 0.8, height = 1.0))
+print(heat_dendro, vp = viewport(x = 0.9, y = 0.62, width = 0.2, height = 0.83))
+```
+
+
+```{r}
+#USED IN RESULTS: USING GENES AS COLUMNS - heatmapdata2 is a different construct of data with genes as columns not rows
+#SUNEXPOSED
+
+heatmap_data2 <- results_sun_gprof %>%
+  filter(present_count == "4" & source %in% c("KEGG", "REAC")) %>% 
+ select(source, term_name, intersections) %>% 
+  separate_rows(intersections, sep = ",") %>% 
+  mutate(yes = "yes") %>% 
+  pivot_wider(names_from = intersections, values_from = yes) %>% 
+  replace(., is.na(.), "no") %>% 
+  mutate(term_name = paste0(source,":", term_name), 
+         source = NULL,
+         across(GSDMD:IL18R1, factor))
+```
+
+
+```{r}
+#heatmapdata2 distance created via gower
+
+
+heatmap_dist2 <- daisy(heatmap_data2[, 2:50], 
+                       metric = c("gower"))
+
+heatmap_matrix2 <- as.matrix(heatmap_dist2) 
+rownames(heatmap_matrix2)<- heatmap_data2$term_name
+```
+
+```{r}
+rownames(heatmap_matrix2)
+```
+
+```{r}
+rownames(heatmap_matrix2)[order(dendro2 %>% labels)]
+```
+
+
+```{r}
+plot(hclust(heatmap_dist2, method = "complete"))
+```
+
+```{r}
+dendro2 <- as.dendrogram(hclust(heatmap_dist2, method = "complete"))
+ 
+heat_dendro2 <- ggdendrogram(data = dendro2, rotate = TRUE, labels = FALSE)+
+  theme(axis.text.y = element_blank())
+```
+
+
+```{r,fig.width=12}
+
+ heat_plot2 <- heatmap_data2 %>% 
+  pivot_longer(cols = 2:50, names_to = "gene", values_to = "yes")%>% 
+  ggplot(aes(x = gene,
+             y = factor(term_name, levels = rownames(heatmap_matrix2)[order(dendro2 %>% labels)]),
+             fill = yes))+
+  theme(panel.grid.major = element_line(colour = "black"))+
+      geom_tile(color = "grey76")+
+  scale_fill_manual(values = c("gray94", "gold2"))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5), 
+        legend.position = "bottom")+
+  labs(x = "Genes",
+       y = "Enriched biological pathways",
+       fill= "Presence"
+       )
+
+
+
+```
+
+
+```{r}
+#heatmap_data2 %>% 
+  pivot_longer(cols = 2:50, names_to = "gene", values_to = "yes")%>% 
+  ggplot(aes(x = gene,
+             y = factor(term_name, levels = rownames(heatmap_matrix2)[order(dendro2 %>% labels)]),
+             fill = yes))+
+  theme(panel.grid.major = element_line(colour = "black"))+
+      geom_tile(color = "grey76")+
+  scale_fill_manual(values = c("gray94", "gold2"))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5), 
+        legend.position = "bottom")+
+  labs(x = "Genes",
+       y = "Enriched biological pathways",
+       fill= "Presence"
+       )
+```
+
+
+```{r, fig.width=12}
+grid.newpage()
+print(heat_plot2, vp = viewport(x = 0.4, y = 0.5, width = 0.8, height = 0.94))
+print(heat_dendro2, vp = viewport(x = 0.9, y = 0.575, width = 0.2, height = 0.78))
+```
+
+
+```{r}
+#extracting the unique genes for the 5 comorbid diseases to be used in the heatmap data
+
+genes_acne <- data %>% 
+  filter(disease == "acne") %>% 
+  distinct(gene)
+
+genes_rosacea <- data %>% 
+  filter(disease == "rosacea") %>% 
+  distinct(gene)
+
+genes_rheumatoid_arthritis <- data %>% 
+  filter(disease == "rheumatoid_arthritis") %>% 
+  distinct(gene)
+
+genes_endometriosis <- data %>% 
+  filter(disease == "endometriosis") %>% 
+  distinct(gene)
+
+genes_psoriasis <- data %>% 
+  filter(disease == "psoriasis") %>% 
+  distinct(gene)
+
+genes_alopecia <- data %>% 
+  filter(disease == "alopecia") %>% 
+  distinct(gene)
+```
+
+
+```{r}
+analysis1 <- heatmap_data2 %>% 
+   pivot_longer(cols = 2:50, names_to = "gene", values_to = "yes") %>% 
+  mutate(
+   acne = ifelse(gene %in% genes_acne$gene, "acne", ""),
+   alopecia = ifelse(gene %in% genes_alopecia$gene, "alopecia", ""),
+   endometriosis = ifelse(gene %in% genes_endometriosis$gene, "endometriosis", ""),
+   rheumatoid_arthritis = ifelse(gene %in% genes_rheumatoid_arthritis$gene, "rheumatoid_arthritis", ""),
+   psoriasis = ifelse(gene %in% genes_psoriasis$gene, "psoriasis", ""),
+   rosacea = ifelse(gene %in% genes_rosacea$gene, "rosacea", "")
+  ) %>% 
+  unite("disease_presence", acne:rosacea, sep = " ") %>% 
+  distinct(gene, disease_presence) %>% 
+  mutate(
+    disease_presence = case_when(
+      str_trim(disease_presence) == "" ~ "none", 
+      TRUE ~ as.character(str_trim(disease_presence))
+    )
+  )
+
+```
+
+
+```{r, fig.height=3, fig.width=8.2}
+analysis1 %>% 
+  separate_rows(disease_presence, sep = " ") %>% 
+  filter(disease_presence != "") %>% 
+  mutate(
+    value = 1
+  ) %>% 
+  ggplot(aes(x = gene, y = disease_presence, fill = disease_presence))+
+  geom_tile(color = "gray80")+
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5), 
+        legend.position = "bottom")+
+  labs(
+    x = "Genes",
+    y = "Diseases",
+    fill= "Presence of gene in each disease")
+  
+
+```
+
+
+
+```{r}
+#UNEXPOSED DATA - to be used in results
+
+heatmap_data3 <- results_nosun_gprof1 %>%
+  filter(present_count == "4" & source %in% c("KEGG", "REAC")) %>% 
+ select(source, term_name, intersections) %>% 
+  separate_rows(intersections, sep = ",") %>% 
+  mutate(yes = "yes") %>% 
+  pivot_wider(names_from = intersections, values_from = yes) %>% 
+  replace(., is.na(.), "no") %>% 
+  mutate(term_name = paste0(source,":", term_name), 
+         source = NULL,
+         across(GSDMD:ENTPD5, factor))
+```
+
+```{r}
+#Calculating the gower distance for heatmap_data3 (Sununexposed)
+
+heatmap_dist3 <- daisy(heatmap_data3[, 2:123], 
+                       metric = c("gower"))
+
+heatmap_matrix3 <- as.matrix(heatmap_dist3) 
+rownames(heatmap_matrix3)<- heatmap_data3$term_name
+```
+
+```{r}
+plot(hclust(heatmap_dist3, method = "complete"))
+```
+
+
+```{r}
+dendro3 <- as.dendrogram(hclust(heatmap_dist3, method = "complete"))
+ 
+heat_dendro3 <- ggdendrogram(data = dendro3, rotate = TRUE, labels = FALSE)+
+  theme(axis.text.y = element_blank())
+```
+
+
+```{r}
+rownames(heatmap_matrix3)[order(dendro3 %>% labels)]
+```
+
+```{r,fig.width=12}
+
+ heat_plot3 <- heatmap_data3 %>% 
+  pivot_longer(cols = 2:123, names_to = "gene", values_to = "yes")%>% 
+  ggplot(aes(x = gene,
+             y = factor(term_name, levels = rownames(heatmap_matrix3)[order(dendro3 %>% labels)]),
+             fill = yes))+
+  theme(panel.grid.major = element_line(colour = "black"))+
+      geom_tile(color = "grey76")+
+  scale_fill_manual(values = c("gray94", "deepskyblue2"))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5), 
+        legend.position = "bottom")+
+  labs(x = "Genes",
+       y = "Enriched biological pathways",
+       fill= "Presence"
+       )
+
+
+```
+
+```{r, fig.width=29, fig.height=18}
+grid.newpage()
+print(heat_plot3, vp = viewport(x = 0.4, y = 0.5, width = 0.8, height = 0.94))
+print(heat_dendro3, vp = viewport(x = 0.9, y = 0.524, width = 0.2, height = 0.96))
+
+```
+
+```{r}
+analysis2 <- heatmap_data3 %>% 
+   pivot_longer(cols = 2:123, names_to = "gene", values_to = "yes") %>% 
+  mutate(
+   acne = ifelse(gene %in% genes_acne$gene, "acne", ""),
+   alopecia = ifelse(gene %in% genes_alopecia$gene, "alopecia", ""),
+   endometriosis = ifelse(gene %in% genes_endometriosis$gene, "endometriosis", ""),
+   rheumatoid_arthritis = ifelse(gene %in% genes_rheumatoid_arthritis$gene, "rheumatoid_arthritis", ""),
+   psoriasis = ifelse(gene %in% genes_psoriasis$gene, "psoriasis", ""),
+   rosacea = ifelse(gene %in% genes_rosacea$gene, "rosacea", "")
+  ) %>% 
+  unite("disease_presence", acne:rosacea, sep = " ") %>% 
+  distinct(gene, disease_presence) %>% 
+  mutate(
+    disease_presence = case_when(
+      str_trim(disease_presence) == "" ~ "none", 
+      TRUE ~ as.character(str_trim(disease_presence))
+    )
+  )
+```
+
+
+```{r, fig.height=3, fig.width=17.8}
+analysis2 %>% 
+  separate_rows(disease_presence, sep = " ") %>% 
+  filter(disease_presence != "") %>% 
+  mutate(
+    value = 1
+  ) %>% 
+  ggplot(aes(x = gene, y = disease_presence, fill = disease_presence))+
+  geom_tile(color = "gray80")+
+   theme_minimal()+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5), 
+        legend.position = "bottom")+
+  labs(
+    x = "Genes",
+    y = "Diseases",
+    fill= "Presence of gene in each disease"
+  )
+
+```
+
+
+
+```{r}
+#new method for clustering biopathways - UNEXPOSED
+
+unexposed_pathways <- read_csv("../results/results_nosun_gprof1.csv") %>%
+  filter(present_count == 4 & source %in% c("REAC", "KEGG")) %>%
+  pivot_longer(cols=c(gene0_list, gene1_list, gene2_list, gene3_list),
+               values_to='intersections', names_to='level') %>%
+ select(source, term_name, intersections) %>%
+  separate_rows(intersections, sep = ",") %>%
+  distinct() %>% drop_na() %>%
+  mutate(present = 1) %>%
+  pivot_wider(names_from = "intersections", values_from = "present") %>%
+  mutate(term_name = paste0(source,":", term_name),
+         source = NULL,
+         across(!c(term_name), ~ replace_na(.x, 0)) )
+unexposed_pathways %>%
+  write_csv("../results/unexposed_pathways.csv")
+```
+
+```{r}
+unexposed_pathways_matrix <- as.matrix(unexposed_pathways[, -1])
+rownames(unexposed_pathways_matrix) <- unexposed_pathways$term_name
+dendro <- as.dendrogram(hclust(d=dist(x=unexposed_pathways_matrix)))
+dendro_plot <- ggdendrogram(data=dendro, rotate=TRUE, labels = FALSE)
+```
+
+```{r, fig.width=23, fig.height=10}
+
+heatmap_plot <- unexposed_pathways %>%
+    pivot_longer(cols=!c(term_name), names_to='gene', values_to='present') %>% 
+  mutate(
+    present = as.character(present)
+  ) %>% 
+    ggplot(aes(x=gene, y=factor(term_name, levels = dendro %>% labels),
+                fill=present))+
+    geom_tile(color="gray")+
+  scale_fill_manual(values = c("gray91", "royalblue1"))+
+  scale_x_discrete(position = "top")+
+    theme(legend.position="bottom",
+         axis.text.x = element_text(angle=90, hjust=0, vjust=0.5))+
+    labs(x = "Genes",
+       y = "Enriched biological pathways",
+       fill= "Presence"
+       )
+```
+
+
+```{r, fig.width=29, fig.height=18}
+grid.newpage()
+print(heatmap_plot, vp = viewport(x = 0.4, y = 0.556, width = 0.8, height = 0.94))
+print(dendro_plot, vp = viewport(x = 0.9, y = 0.534, width = 0.2, height = 0.946))
+
+```
+
+
+```{r, fig.height=3, fig.width=17.78}
+analysis2 %>% 
+  separate_rows(disease_presence, sep = " ") %>% 
+  filter(disease_presence != "") %>% 
+   mutate(
+    value = 1
+  ) %>% 
+  pivot_wider(names_from = "disease_presence", values_from = "value" ) %>% 
+  replace(., is.na(.),0) %>% 
+  pivot_longer(cols = acne:alopecia, names_to = "disease_presence", values_to = "value") %>% 
+  mutate(
+    disease_value = ifelse(value == 1, disease_presence, "NA")
+  )  %>% 
+  ggplot(aes(x = gene, y = disease_presence, fill = disease_value))+
+  geom_tile(color = "gray")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5), 
+        legend.position = "bottom")+
+  scale_fill_manual(values = c("deeppink2", "goldenrod1", "olivedrab3", "gray91","slateblue1", "sienna2", "deepskyblue2" ))+
+  labs(
+    x = "Genes",
+    y = "Diseases",
+    fill= "Presence of gene in each disease"
+  )
+```
+
+
+
+```{r}
+#new method for clustering biopathways - SUN EXPOSED
+
+sunexposed_pathways <- read_csv("../results/results_sun_gprof.csv") %>%
+  filter(present_count == 4 & source %in% c("REAC", "KEGG")) %>%
+  pivot_longer(cols=c(gene0_list, gene1_list, gene2_list, gene3_list),
+               values_to='intersections', names_to='level') %>%
+ select(source, term_name, intersections) %>%
+  separate_rows(intersections, sep = ",") %>%
+  distinct() %>% drop_na() %>%
+  mutate(present = 1) %>%
+  pivot_wider(names_from = "intersections", values_from = "present") %>%
+  mutate(term_name = paste0(source,":", term_name),
+         source = NULL,
+         across(!c(term_name), ~ replace_na(.x, 0)) )
+sunexposed_pathways %>%
+  write_csv("../results/sunexposed_pathways.csv")
+
+```
+
+```{r}
+sunexposed_pathways_matrix <- as.matrix(sunexposed_pathways[, -1])
+rownames(sunexposed_pathways_matrix) <- sunexposed_pathways$term_name
+sundendro <- as.dendrogram(hclust(d=dist(x=sunexposed_pathways_matrix)))
+sundendro_plot <- ggdendrogram(data=sundendro, rotate=TRUE, labels = FALSE)
+```
+
+```{r}
+sunexposed_pathways %>%
+    pivot_longer(cols=!c(term_name), names_to='gene', values_to='present') %>%
+    ggplot(aes(x=gene, y = term_name,
+                fill=present))+
+    geom_tile(color="gray")+
+    theme(legend.position="bottom",
+         axis.text.x = element_text(angle=90, hjust=1, vjust=0.5))
+
+```
+
+
+```{r, fig.width=10, fig.height=10}
+sunheatmap_plot <- sunexposed_pathways %>%
+    pivot_longer(cols=!c(term_name), names_to='gene', values_to='present') %>% 
+  mutate(
+    present = as.character(present)
+  ) %>% 
+    ggplot(aes(x=gene, y=factor(term_name, levels = sundendro %>% labels),
+                fill=present))+
+    geom_tile(color="gray")+ 
+  scale_fill_manual(values = c("gray91", "orange"))+
+  scale_x_discrete(position = "top")+
+    theme(legend.position="bottom",
+         axis.text.x = element_text(angle=90, hjust=0, vjust=0.5) )+
+    labs(x = "Genes",
+       y = "Enriched biological pathways",
+       fill= "Presence"
+       )
+  
+```
+
+```{r, fig.height=8, fig.width=12}
+grid.newpage()
+print(sunheatmap_plot, vp = viewport(x = 0.4, y = 0.62, width = 0.8, height = 0.7))
+print(sundendro_plot, vp = viewport(x = 0.9, y = 0.575, width = 0.2, height = 0.57))
+
+```
+
+
+```{r, fig.height=3, fig.width=8.1}
+###analysis1 %>% 
+  separate_rows(disease_presence, sep = " ") %>% 
+  filter(disease_presence != "") %>% 
+  mutate(
+    value = 1
+  ) %>% 
+  ggplot(aes(x = gene, y = disease_presence, fill = disease_presence))+
+  geom_tile(color = "gray91")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5), 
+        legend.position = "bottom")+
+  labs(
+    x = "Genes",
+    y = "Diseases",
+    fill= "Presence of gene in each disease")
+
+```
+
+
+```{r, fig.height=3, fig.width=8.13}
+analysis1 %>% 
+  separate_rows(disease_presence, sep = " ") %>% 
+  filter(disease_presence != "") %>% 
+  mutate(
+    value = 1
+  ) %>% 
+  pivot_wider(names_from = "disease_presence", values_from = "value" ) %>% 
+  replace(., is.na(.),0) %>% 
+  pivot_longer(cols = acne:endometriosis, names_to = "disease_presence", values_to = "value") %>% 
+  mutate(
+    disease_value = ifelse(value == 1, disease_presence, "NA")
+  ) %>% 
+  ggplot(aes(x = gene, y = disease_presence, fill = disease_value))+
+  geom_tile(color = "gray")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5), 
+        legend.position = "bottom")+
+  scale_fill_manual(values = c("deeppink2", "olivedrab3", "gray91", "slateblue1","sienna2", "deepskyblue2" ))+
+  labs(
+    x = "Genes",
+    y = "Diseases",
+    fill= "Presence of gene in each disease")
+```
+
