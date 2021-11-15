@@ -1,0 +1,42 @@
+#!/usr/bin/env python
+import pandas as pd
+from scipy.stats import hypergeom
+import os
+def get_overlaps(ppin_dir, results_dir, total_genes):
+    tissues = ['sun_exposed', 'not_sun_exposed']
+    df = []
+    for tissue in tissues:
+        print(tissue)
+        ppin = pd.read_csv(os.path.join(ppin_dir, tissue + '_ppin.txt'), sep='\t')
+        levels = [col.split('_')[1] for col in ppin.columns if col.startswith('gene')]
+        eqtls_dir = os.listdir(os.path.join(results_dir, tissue))
+        for dx in eqtls_dir:
+            print(f'\t{dx}')
+            dx_df = pd.read_csv(
+                os.path.join(results_dir, tissue, dx, 'significant_eqtls.txt'),
+                sep='\t')
+            for level in levels:
+                pval, inter = calc_prob(ppin[f'gene_{level}'], dx_df['gene'], total_genes)
+                df.append([tissue, dx, level, pval, len(inter),
+                      ppin[f'gene_{level}'].nunique(),
+                      dx_df['gene'].nunique(),
+                           ', '.join(inter)])
+    cols = ['tissue', 'disease', 'level', 'pval', 'overlap_len',
+            'interacting_p', 'disease_genes', 'overlap_genes']
+    df = pd.DataFrame(df, columns=cols)
+    return df
+def calc_prob(ppin, dx, total_genes):
+    inter = list(set(ppin) & set(dx))
+    pval = hypergeom.sf(len(inter) -1, total_genes, ppin.nunique(), dx.nunique())
+    return format(pval, '.2E'), inter
+def get_ref_genes(gene_ref):
+    df = pd.read_csv(gene_ref, sep='\t', header=None)#['gene']
+    return df[3].nunique()
+if __name__=='__main__':
+    results_dir = '../results/'
+    ppin_dir = '../analysis/ppin/acne/'
+    gene_ref = '../data/gene_reference.bed'
+    total_genes = get_ref_genes(gene_ref)
+    df = get_overlaps(ppin_dir, results_dir, total_genes)
+    print(df)
+    df.to_csv('../analysis/multimorbidities.txt', sep='\t', index=False)
